@@ -1,0 +1,57 @@
+media_player:
+  - platform: remote3_display
+    name: "Remote 3 TV Room Display"
+    source_entity: media_player.tv_room
+    app_entity: media_player.shield_android_tv
+    fallback_logo: /local/icons/tv.png
+    tmdb_enabled: true
+    tmdb_token: !secret tmdb_token
+    tmdb_language: en-US
+    # Passive TiviMate detection. This reads the banner when TiviMate itself
+    # displays it; it never presses a remote button or changes the TV screen.
+    tivimate_enabled: true
+    tivimate_app_id: ar.tvplayer.tv
+    # Event-driven Shield observer: no ADB polling or UI stutter.
+    tivimate_mode: webhook
+    tivimate_webhook_id: !secret tivimate_webhook_id
+    tivimate_retain_last: true
+    # IDs observed in the supplied TiviMate UI dump.
+    tivimate_channel_resource_id: ar.tvplayer.tv:id/b7
+    tivimate_program_resource_id: ar.tvplayer.tv:id/152
+    tivimate_time_resource_id: ar.tvplayer.tv:id/315
+    # Channel logos from the private IPTV Editor XMLTV EPG (M3U also works).
+    playlist_enabled: true
+    playlist_urls:
+      - !secret iptv_editor_channels_playlist_url
+      - !secret iptv_editor_sports_playlist_url
+    # Xtream is retained as an optional fallback but is disabled here.
+    xtream_enabled: false
+    tivimate_artwork: channel_icon
+    tivimate_channel_icon_scale: 75
+    app_names:
+      com.nuvio.tv: Nuvio
+      com.nuvio.app: Nuvio
+      org.smarttube.stable: SmartTube
+      au.net.abc.iview: ABC iview
+      com.swm.live: 7plus
+      ar.tvplayer.tv: TV Player
+      dev.trooped.tvquickbars: TV Quick Bars
+      ca.dstudio.atvlauncher.pro: ATV Launcher
+    app_logos:
+      Nuvio: /local/icons/nuvio.png
+      com.nuvio.tv: /local/icons/nuvio.png
+      com.nuvio.app: /local/icons/nuvio.png
+      SmartTube: /local/icons/smarttube.png
+      org.smarttube.stable: /local/icons/smarttube.png
+      ABC iview: /local/icons/abc-iview.png
+      au.net.abc.iview: /local/icons/abc-iview.png
+      7plus: /local/icons/7plus.png
+      com.swm.live: /local/icons/7plus.png
+      TV Player: /local/icons/tv-player.png
+      ar.tvplayer.tv: /local/icons/tv-player.png
+      TV Quick Bars: /local/icons/tv-quick-bars.png
+      dev.trooped.tvquickbars: /local/icons/tv-quick-bars.png
+      ATV Launcher: /local/icons/atv-launcher.png
+      ca.dstudio.atvlauncher.pro: /local/icons/atv-launcher.png
+      Play Store: /local/icons/play-store.png
+      Google Cast: /local/icons/google-cast.png

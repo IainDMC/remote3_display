@@ -1,0 +1,10 @@
+{
+  "domain": "remote3_display",
+  "name": "Remote 3 Media Display",
+  "codeowners": ["@IainDMC"],
+  "documentation": "https://github.com/IainDMC/remote3_display",
+  "issue_tracker": "https://github.com/IainDMC/remote3_display/issues",
+  "dependencies": ["webhook"],
+  "iot_class": "local_push",
+  "version": "1.7.2"
+}
