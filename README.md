@@ -32,14 +32,48 @@ HACS installs the component under:
 /config/custom_components/remote3_display/
 ```
 
-This integration is configured with YAML. Copy `remote3_display.example.yaml` into
-your Home Assistant package or merge its `media_player` entry into
-`configuration.yaml`. Keep private tokens and playlist URLs in `secrets.yaml`.
+New installations are configured from **Settings → Devices & services → Add
+integration → Remote 3 Media Display**. Existing YAML installations remain
+supported.
+
+After setup, open the integration and select **Configure** to manage:
+
+- artwork preference, fallback, icon size, canvas and background
+- programme progress, title, channel and next-programme fields
+- observer retention, stale threshold and inactive behaviour
+- XMLTV rollover, refresh interval, bounded history/future windows and guide gaps
+- strict/safe matching, channel aliases, suffix and superscript cleanup
+- TMDB scope, language, confidence and excluded programme categories
+- advanced ADB polling and TiviMate resource IDs
+
+The integration also creates buttons to refresh the EPG, clear artwork caches,
+reset retained TiviMate data, and test observer freshness.
 
 ## Updating
 
 Install updates from HACS, then restart Home Assistant. GitHub releases are used as
 the integration versions presented by HACS.
+
+## Moving an existing YAML setup into the GUI
+
+Version 2.0.1 automatically imports the existing
+`media_player: - platform: remote3_display` YAML block:
+
+1. Install the update and restart Home Assistant while the old YAML block is still
+   present.
+2. Open **Settings → Devices & services → Remote 3 Media Display**. The imported
+   GUI entry uses the current YAML values, including values resolved through
+   `!secret`.
+3. Open **Configure** and confirm the settings.
+4. Remove or comment out the old YAML block and restart again. The GUI entry then
+   becomes the only source of configuration.
+
+The import uses the existing values only when the GUI entry is first created.
+Later GUI changes are not overwritten if the old YAML block is accidentally left
+in place.
+
+Private values entered in the integration UI are stored in Home Assistant's
+config-entry storage. YAML users can continue using `!secret`.
 
 ## TiviMate Observer
 

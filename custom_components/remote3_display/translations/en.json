@@ -1,0 +1,24 @@
+{
+  "title": "Remote 3 Media Display",
+  "config": {
+    "step": {
+      "user": {"title": "Display entities", "description": "Choose the media player and Android TV entity used by this display.", "data": {"name": "Display name", "source_entity": "Source media player", "app_entity": "Android TV app entity", "fallback_logo": "Fallback logo path"}},
+      "tivimate": {"title": "TiviMate observer", "data": {"tivimate_enabled": "Enable TiviMate", "tivimate_mode": "Detection mode", "tivimate_webhook_id": "Observer webhook ID", "tivimate_adb_entity": "ADB media player (ADB mode only)", "tivimate_app_id": "TiviMate app ID", "tivimate_retain_last": "Retain last-known programme"}},
+      "metadata": {"title": "Metadata sources", "description": "Enter one M3U or XMLTV URL per line. Credentials remain in Home Assistant.", "data": {"playlist_enabled": "Enable playlist/XMLTV sources", "playlist_urls_text": "Playlist and XMLTV URLs", "tmdb_enabled": "Enable TMDB artwork", "tmdb_token": "TMDB API read token", "tmdb_language": "TMDB language", "app_names_json": "App name mappings (JSON)", "app_logos_json": "App logo mappings (JSON)"}}
+    },
+    "error": {"invalid_input": "Check the supplied settings."},
+    "abort": {"already_configured": "This display is already configured."}
+  },
+  "options": {
+    "step": {
+      "init": {"menu_options": {"general": "Entities and data sources", "display": "Display and artwork", "tivimate": "TiviMate behaviour", "xmltv": "XMLTV schedules", "matching": "Channel matching", "tmdb": "TMDB artwork", "advanced": "Advanced"}},
+      "general": {"title": "Entities and data sources", "data": {"source_entity": "Source media player", "app_entity": "Android TV app entity", "fallback_logo": "Fallback logo path", "tivimate_enabled": "Enable TiviMate", "tivimate_mode": "Detection mode", "tivimate_webhook_id": "Observer webhook ID", "tivimate_adb_entity": "ADB media player", "tivimate_app_id": "TiviMate app ID", "playlist_enabled": "Enable playlist/XMLTV sources", "playlist_urls_text": "Playlist and XMLTV URLs", "tmdb_enabled": "Enable TMDB", "tmdb_token": "TMDB API read token", "app_names_json": "App name mappings (JSON)", "app_logos_json": "App logo mappings (JSON)"}},
+      "display": {"title": "Display and artwork", "data": {"tivimate_artwork": "Preferred TiviMate artwork", "tivimate_fallback_artwork": "Fallback TiviMate artwork", "tivimate_channel_icon_scale": "Channel icon size (%)", "icon_canvas_shape": "Icon canvas shape", "icon_background": "Icon background", "show_progress": "Show programme progress", "show_channel_as_artist": "Show channel as artist", "show_program_as_title": "Show programme as title", "show_next_program": "Expose next programme"}},
+      "tivimate": {"title": "TiviMate behaviour", "data": {"tivimate_retain_last": "Retain last-known data", "xmltv_rollover_enabled": "Follow programme changes using XMLTV", "rollover_grace_seconds": "Programme rollover grace (seconds)", "observer_stale_minutes": "Observer stale after (minutes)", "inactive_behavior": "Behaviour while TiviMate is inactive"}},
+      "xmltv": {"title": "XMLTV schedules", "data": {"xmltv_schedule_enabled": "Load programme schedules", "xmltv_refresh_hours": "Refresh interval (hours)", "xmltv_history_hours": "Keep previous programmes (hours)", "xmltv_future_hours": "Keep upcoming programmes (hours)", "epg_gap_behavior": "Behaviour when the guide has a gap", "prefer_later_playlist_source": "Later source overrides earlier source"}},
+      "matching": {"title": "Channel matching", "description": "Aliases use one line per mapping, for example: Observed name = XMLTV name", "data": {"channel_matching_mode": "Matching mode", "channel_aliases_text": "Manual channel aliases", "remove_quality_suffixes": "Remove 4K, UHD and FHD suffixes", "custom_channel_suffixes_text": "Additional suffixes to remove", "remove_small_characters": "Remove superscript and small characters"}},
+      "tmdb": {"title": "TMDB artwork", "data": {"tmdb_enabled": "Enable TMDB", "tmdb_language": "Language", "tmdb_for_tivimate": "Use for TiviMate", "tmdb_for_other_apps": "Use for other apps", "tmdb_minimum_match": "Minimum title match (%)", "tmdb_excluded_categories_text": "Excluded TiviMate categories"}},
+      "advanced": {"title": "Advanced", "data": {"tivimate_poll_seconds": "ADB polling interval (seconds)", "tivimate_channel_resource_id": "Channel resource ID", "tivimate_program_resource_id": "Programme resource ID", "tivimate_time_resource_id": "Time resource ID"}}
+    }
+  }
+}
