@@ -8,7 +8,13 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers import device_registry as dr
 
 DOMAIN = "remote3_display"
-PLATFORMS = [Platform.MEDIA_PLAYER, Platform.BUTTON]
+PLATFORMS = [
+    Platform.MEDIA_PLAYER,
+    Platform.BUTTON,
+    Platform.SWITCH,
+    Platform.NUMBER,
+    Platform.SELECT,
+]
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
@@ -22,7 +28,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         name=device_name,
         manufacturer="IainDMC",
         model="Remote 3 Media Display",
-        sw_version="2.0.7",
+        sw_version="2.1.0",
     )
     hass.data.setdefault(DOMAIN, {}).setdefault("entries", {})[entry.entry_id] = {
         "entry": entry

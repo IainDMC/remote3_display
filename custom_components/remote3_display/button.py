@@ -58,7 +58,7 @@ class Remote3DisplayButton(ButtonEntity):
             name=entry.title,
             manufacturer="IainDMC",
             model="Remote 3 Media Display",
-            sw_version="2.0.7",
+            sw_version="2.1.0",
         )
 
     async def async_press(self) -> None:
