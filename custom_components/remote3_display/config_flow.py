@@ -57,6 +57,17 @@ class Remote3DisplayConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     def __init__(self) -> None:
         self._data: dict[str, Any] = {}
 
+    def _imported_entry(self):
+        """Return the legacy YAML-imported entry, if one exists."""
+        return next(
+            (
+                entry
+                for entry in self._async_current_entries()
+                if entry.source == config_entries.SOURCE_IMPORT
+            ),
+            None,
+        )
+
     @staticmethod
     @callback
     def async_get_options_flow(config_entry) -> "Remote3DisplayOptionsFlow":
@@ -64,6 +75,8 @@ class Remote3DisplayConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     async def async_step_user(self, user_input=None) -> ConfigFlowResult:
         """Collect the primary Home Assistant entities."""
+        if self._imported_entry() is not None:
+            return await self.async_step_migrate_import()
         if user_input is not None:
             self._data.update(user_input)
             return await self.async_step_tivimate()
@@ -76,6 +89,34 @@ class Remote3DisplayConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             }
         )
         return self.async_show_form(step_id="user", data_schema=schema)
+
+    async def async_step_migrate_import(self, user_input=None) -> ConfigFlowResult:
+        """Replace a YAML-imported entry with a normal UI entry."""
+        imported_entry = self._imported_entry()
+        if imported_entry is None:
+            return self.async_abort(reason="no_imported_entry")
+
+        errors: dict[str, str] = {}
+        if user_input is not None:
+            if not user_input.get("confirm"):
+                errors["base"] = "migration_not_confirmed"
+            else:
+                title = imported_entry.title
+                unique_id = imported_entry.unique_id
+                data = {**imported_entry.data, **imported_entry.options}
+                if await self.hass.config_entries.async_remove(
+                    imported_entry.entry_id
+                ):
+                    if unique_id is not None:
+                        await self.async_set_unique_id(unique_id)
+                    return self.async_create_entry(title=title, data=data)
+                errors["base"] = "migration_failed"
+
+        return self.async_show_form(
+            step_id="migrate_import",
+            data_schema=vol.Schema({vol.Required("confirm", default=False): bool}),
+            errors=errors,
+        )
 
     async def async_step_import(self, import_data) -> ConfigFlowResult:
         """Convert a legacy media_player platform configuration."""

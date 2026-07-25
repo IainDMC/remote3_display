@@ -22,7 +22,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         name=device_name,
         manufacturer="IainDMC",
         model="Remote 3 Media Display",
-        sw_version="2.0.5",
+        sw_version="2.0.6",
     )
     hass.data.setdefault(DOMAIN, {}).setdefault("entries", {})[entry.entry_id] = {
         "entry": entry

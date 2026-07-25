@@ -273,7 +273,7 @@ class Remote3DisplayMediaPlayer(MediaPlayerEntity):
                 name=config[CONF_NAME],
                 manufacturer="IainDMC",
                 model="Remote 3 Media Display",
-                sw_version="2.0.5",
+                sw_version="2.0.6",
             )
         self._source_entity = config[CONF_SOURCE_ENTITY]
         self._app_entity = config.get(CONF_APP_ENTITY)
