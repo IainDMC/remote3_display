@@ -6,6 +6,7 @@ from homeassistant.components.button import ButtonEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import HomeAssistantError
+from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from . import DOMAIN
@@ -52,6 +53,13 @@ class Remote3DisplayButton(ButtonEntity):
         self._attr_name = f"{entry.title} {name}"
         self._attr_icon = icon
         self._attr_unique_id = f"{entry.entry_id}_{action}"
+        self._attr_device_info = DeviceInfo(
+            identifiers={(DOMAIN, entry.entry_id)},
+            name=entry.title,
+            manufacturer="IainDMC",
+            model="Remote 3 Media Display",
+            sw_version="2.0.4",
+        )
 
     async def async_press(self) -> None:
         """Run the selected maintenance action."""

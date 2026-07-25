@@ -31,6 +31,7 @@ from homeassistant.core import CALLBACK_TYPE, HomeAssistant, callback
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.storage import Store
 from homeassistant.helpers.event import async_track_state_change_event, async_track_time_interval
@@ -266,6 +267,14 @@ class Remote3DisplayMediaPlayer(MediaPlayerEntity):
         self._attr_unique_id = (
             f"{entry_id}_media_player" if entry_id is not None else None
         )
+        if entry_id is not None:
+            self._attr_device_info = DeviceInfo(
+                identifiers={(DOMAIN, entry_id)},
+                name=config[CONF_NAME],
+                manufacturer="IainDMC",
+                model="Remote 3 Media Display",
+                sw_version="2.0.4",
+            )
         self._source_entity = config[CONF_SOURCE_ENTITY]
         self._app_entity = config.get(CONF_APP_ENTITY)
         self._app_logos = config.get(CONF_APP_LOGOS, {})
