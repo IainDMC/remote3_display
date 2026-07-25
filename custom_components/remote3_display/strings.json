@@ -12,13 +12,6 @@
           "fallback_logo": "Fallback logo path"
         }
       },
-      "migrate_import": {
-        "title": "Convert imported configuration",
-        "description": "Convert the existing YAML-imported display to a normal UI-managed integration entry. All current settings, URLs, credentials and the observer webhook ID will be copied. Retained TiviMate data is stored separately and will remain available.",
-        "data": {
-          "confirm": "Convert the imported entry now"
-        }
-      },
       "tivimate": {
         "title": "TiviMate observer",
         "data": {
@@ -45,13 +38,10 @@
       }
     },
     "error": {
-      "invalid_input": "Check the supplied settings.",
-      "migration_failed": "Home Assistant could not replace the imported entry.",
-      "migration_not_confirmed": "Confirm the conversion to continue."
+      "invalid_input": "Check the supplied settings."
     },
     "abort": {
-      "already_configured": "This display is already configured.",
-      "no_imported_entry": "The imported entry no longer exists."
+      "already_configured": "This display is already configured."
     }
   },
   "options": {

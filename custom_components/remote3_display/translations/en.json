@@ -3,12 +3,11 @@
   "config": {
     "step": {
       "user": {"title": "Display entities", "description": "Choose the media player and Android TV entity used by this display.", "data": {"name": "Display name", "source_entity": "Source media player", "app_entity": "Android TV app entity", "fallback_logo": "Fallback logo path"}},
-      "migrate_import": {"title": "Convert imported configuration", "description": "Convert the existing YAML-imported display to a normal UI-managed integration entry. All current settings, URLs, credentials and the observer webhook ID will be copied. Retained TiviMate data is stored separately and will remain available.", "data": {"confirm": "Convert the imported entry now"}},
       "tivimate": {"title": "TiviMate observer", "data": {"tivimate_enabled": "Enable TiviMate", "tivimate_mode": "Detection mode", "tivimate_webhook_id": "Observer webhook ID", "tivimate_adb_entity": "ADB media player (ADB mode only)", "tivimate_app_id": "TiviMate app ID", "tivimate_retain_last": "Retain last-known programme"}},
       "metadata": {"title": "Metadata sources", "description": "Enter one M3U or XMLTV URL per line. Credentials remain in Home Assistant.", "data": {"playlist_enabled": "Enable playlist/XMLTV sources", "playlist_urls_text": "Playlist and XMLTV URLs", "tmdb_enabled": "Enable TMDB artwork", "tmdb_token": "TMDB API read token", "tmdb_language": "TMDB language", "app_names_json": "App name mappings (JSON)", "app_logos_json": "App logo mappings (JSON)"}}
     },
-    "error": {"invalid_input": "Check the supplied settings.", "migration_failed": "Home Assistant could not replace the imported entry.", "migration_not_confirmed": "Confirm the conversion to continue."},
-    "abort": {"already_configured": "This display is already configured.", "no_imported_entry": "The imported entry no longer exists."}
+    "error": {"invalid_input": "Check the supplied settings."},
+    "abort": {"already_configured": "This display is already configured."}
   },
   "options": {
     "step": {
