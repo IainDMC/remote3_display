@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">TiviMate Observer</string>
+    <string name="service_description">Reads visible TiviMate channel information and sends it to your configured local Home Assistant webhook.</string>
+</resources>

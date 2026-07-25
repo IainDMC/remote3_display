@@ -8,9 +8,10 @@ from typing import Any
 import voluptuous as vol
 
 from homeassistant import config_entries
-from homeassistant.config_entries import ConfigFlowResult, OptionsFlowWithReload
+from homeassistant.config_entries import OptionsFlow
 from homeassistant.const import CONF_NAME
 from homeassistant.core import callback
+from homeassistant.data_entry_flow import FlowResult
 from homeassistant.helpers import selector
 
 from . import DOMAIN
@@ -62,7 +63,7 @@ class Remote3DisplayConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     def async_get_options_flow(config_entry) -> "Remote3DisplayOptionsFlow":
         return Remote3DisplayOptionsFlow()
 
-    async def async_step_user(self, user_input=None) -> ConfigFlowResult:
+    async def async_step_user(self, user_input=None) -> FlowResult:
         """Collect the primary Home Assistant entities."""
         if user_input is not None:
             self._data.update(user_input)
@@ -77,7 +78,7 @@ class Remote3DisplayConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         )
         return self.async_show_form(step_id="user", data_schema=schema)
 
-    async def async_step_import(self, import_data) -> ConfigFlowResult:
+    async def async_step_import(self, import_data) -> FlowResult:
         """Convert a legacy media_player platform configuration."""
         data = dict(import_data or {})
         data.pop("platform", None)
@@ -88,7 +89,7 @@ class Remote3DisplayConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         title = str(data.get(CONF_NAME) or "Remote 3 Media Display")
         return self.async_create_entry(title=title, data=data)
 
-    async def async_step_tivimate(self, user_input=None) -> ConfigFlowResult:
+    async def async_step_tivimate(self, user_input=None) -> FlowResult:
         """Collect observer and TiviMate settings."""
         if user_input is not None:
             self._data.update(user_input)
@@ -109,7 +110,7 @@ class Remote3DisplayConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         )
         return self.async_show_form(step_id="tivimate", data_schema=schema)
 
-    async def async_step_metadata(self, user_input=None) -> ConfigFlowResult:
+    async def async_step_metadata(self, user_input=None) -> FlowResult:
         """Collect XMLTV and TMDB settings."""
         errors: dict[str, str] = {}
         if user_input is not None:
@@ -150,10 +151,10 @@ class Remote3DisplayConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         )
 
 
-class Remote3DisplayOptionsFlow(OptionsFlowWithReload):
+class Remote3DisplayOptionsFlow(OptionsFlow):
     """Sectioned UI options."""
 
-    async def async_step_init(self, user_input=None) -> ConfigFlowResult:
+    async def async_step_init(self, user_input=None) -> FlowResult:
         return self.async_show_menu(
             step_id="init",
             menu_options=[
@@ -171,12 +172,12 @@ class Remote3DisplayOptionsFlow(OptionsFlowWithReload):
         defaults = {**self.config_entry.data, **self.config_entry.options}
         return self.add_suggested_values_to_schema(schema, defaults)
 
-    def _save(self, user_input: dict[str, Any]) -> ConfigFlowResult:
+    def _save(self, user_input: dict[str, Any]) -> FlowResult:
         return self.async_create_entry(
             data={**self.config_entry.options, **user_input}
         )
 
-    async def async_step_general(self, user_input=None) -> ConfigFlowResult:
+    async def async_step_general(self, user_input=None) -> FlowResult:
         """Edit entities, observer connection, sources and mapping data."""
         errors: dict[str, str] = {}
         if user_input is not None:
@@ -225,7 +226,7 @@ class Remote3DisplayOptionsFlow(OptionsFlowWithReload):
             errors=errors,
         )
 
-    async def async_step_display(self, user_input=None) -> ConfigFlowResult:
+    async def async_step_display(self, user_input=None) -> FlowResult:
         if user_input is not None:
             return self._save(user_input)
         schema = vol.Schema(
@@ -255,7 +256,7 @@ class Remote3DisplayOptionsFlow(OptionsFlowWithReload):
             step_id="display", data_schema=self._values(schema)
         )
 
-    async def async_step_tivimate(self, user_input=None) -> ConfigFlowResult:
+    async def async_step_tivimate(self, user_input=None) -> FlowResult:
         if user_input is not None:
             return self._save(user_input)
         schema = vol.Schema(
@@ -277,7 +278,7 @@ class Remote3DisplayOptionsFlow(OptionsFlowWithReload):
             step_id="tivimate", data_schema=self._values(schema)
         )
 
-    async def async_step_xmltv(self, user_input=None) -> ConfigFlowResult:
+    async def async_step_xmltv(self, user_input=None) -> FlowResult:
         if user_input is not None:
             return self._save(user_input)
         schema = vol.Schema(
@@ -298,7 +299,7 @@ class Remote3DisplayOptionsFlow(OptionsFlowWithReload):
             step_id="xmltv", data_schema=self._values(schema)
         )
 
-    async def async_step_matching(self, user_input=None) -> ConfigFlowResult:
+    async def async_step_matching(self, user_input=None) -> FlowResult:
         if user_input is not None:
             return self._save(user_input)
         schema = vol.Schema(
@@ -316,7 +317,7 @@ class Remote3DisplayOptionsFlow(OptionsFlowWithReload):
             step_id="matching", data_schema=self._values(schema)
         )
 
-    async def async_step_tmdb(self, user_input=None) -> ConfigFlowResult:
+    async def async_step_tmdb(self, user_input=None) -> FlowResult:
         if user_input is not None:
             return self._save(user_input)
         schema = vol.Schema(
@@ -338,7 +339,7 @@ class Remote3DisplayOptionsFlow(OptionsFlowWithReload):
             step_id="tmdb", data_schema=self._values(schema)
         )
 
-    async def async_step_advanced(self, user_input=None) -> ConfigFlowResult:
+    async def async_step_advanced(self, user_input=None) -> FlowResult:
         if user_input is not None:
             return self._save(user_input)
         schema = vol.Schema(

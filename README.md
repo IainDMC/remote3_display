@@ -81,6 +81,11 @@ For responsive detection without ADB polling, use `tivimate_mode: webhook` and t
 companion TiviMate Observer accessibility service on the NVIDIA Shield. The webhook
 is local-only and the observer listens only to TiviMate package `ar.tvplayer.tv`.
 
+The observer source and installation guide are included in
+[`tivimate-observer/`](tivimate-observer/README.md). Each GitHub release includes a
+ready-to-sideload `TiviMateObserver-1.0.0.apk`. HACS installs the Home Assistant
+integration only; install the APK separately on the Shield.
+
 ## Notes
 
 - The integration domain remains `remote3_display`; the display name changed without
