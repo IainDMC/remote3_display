@@ -41,7 +41,7 @@ class Remote3ConfigEntity(Entity):
             ),
             manufacturer="IainDMC",
             model="Remote 3 Media Display",
-            sw_version="2.1.0",
+            sw_version="2.2.0",
         )
 
     @property
@@ -57,4 +57,13 @@ class Remote3ConfigEntity(Entity):
         self.hass.config_entries.async_update_entry(
             self._entry, options=options
         )
+        entity = (
+            self.hass.data.get(DOMAIN, {})
+            .get("entries", {})
+            .get(self._entry.entry_id, {})
+            .get("media_player")
+        )
+        if entity is not None and entity.apply_live_option(self._key, value):
+            self.async_write_ha_state()
+            return
         await self.hass.config_entries.async_reload(self._entry.entry_id)

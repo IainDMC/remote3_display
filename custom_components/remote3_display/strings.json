@@ -1,5 +1,15 @@
 {
   "title": "Remote 3 Media Display",
+  "issues": {
+    "observer_stale": {
+      "title": "TiviMate observer is stale",
+      "description": "No recent TiviMate observer update has reached Home Assistant. Check the Shield accessibility service and the observer Home Assistant URL."
+    },
+    "playlist_refresh_failed": {
+      "title": "Programme guide refresh failed",
+      "description": "Remote 3 Media Display could not refresh one or more playlist or XMLTV sources. Check the configured URLs and credentials."
+    }
+  },
   "config": {
     "step": {
       "user": {
@@ -33,7 +43,8 @@
           "tmdb_token": "TMDB API read token",
           "tmdb_language": "TMDB language",
           "app_names_json": "App name mappings (JSON)",
-          "app_logos_json": "App logo mappings (JSON)"
+          "app_logos_json": "App logo mappings (JSON)",
+          "app_artwork_profiles_json": "App artwork priorities (JSON)"
         }
       }
     },
@@ -54,6 +65,7 @@
           "xmltv": "XMLTV schedules",
           "matching": "Channel matching",
           "tmdb": "TMDB artwork",
+          "backup": "Export and import settings",
           "advanced": "Advanced"
         }
       },
@@ -73,7 +85,8 @@
           "tmdb_enabled": "Enable TMDB",
           "tmdb_token": "TMDB API read token",
           "app_names_json": "App name mappings (JSON)",
-          "app_logos_json": "App logo mappings (JSON)"
+          "app_logos_json": "App logo mappings (JSON)",
+          "app_artwork_profiles_json": "App artwork priorities (JSON)"
         }
       },
       "display": {
@@ -81,6 +94,10 @@
         "data": {
           "tivimate_artwork": "Preferred TiviMate artwork",
           "tivimate_fallback_artwork": "Fallback TiviMate artwork",
+          "smarttube_artwork": "Preferred SmartTube artwork",
+          "smarttube_fallback_artwork": "Fallback SmartTube artwork",
+          "nuvio_artwork": "Preferred Nuvio artwork",
+          "nuvio_fallback_artwork": "Fallback Nuvio artwork",
           "tivimate_channel_icon_scale": "Channel icon size (%)",
           "icon_canvas_shape": "Icon canvas shape",
           "icon_background": "Icon background",
@@ -140,6 +157,13 @@
           "tivimate_channel_resource_id": "Channel resource ID",
           "tivimate_program_resource_id": "Programme resource ID",
           "tivimate_time_resource_id": "Time resource ID"
+        }
+      },
+      "backup": {
+        "title": "Export and import settings",
+        "description": "Copy this JSON as a settings backup, or replace it with a previous export to restore non-sensitive settings. Tokens, passwords, webhook IDs and source URLs are deliberately excluded.",
+        "data": {
+          "settings_json": "Non-sensitive settings (JSON)"
         }
       }
     }

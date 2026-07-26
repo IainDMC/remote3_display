@@ -114,7 +114,11 @@ class Remote3DisplayConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         errors: dict[str, str] = {}
         if user_input is not None:
             try:
-                for key in ("app_names_json", "app_logos_json"):
+                for key in (
+                    "app_names_json",
+                    "app_logos_json",
+                    "app_artwork_profiles_json",
+                ):
                     parsed = json.loads(str(user_input.get(key) or "{}"))
                     if not isinstance(parsed, dict):
                         raise ValueError(f"{key} must contain a JSON object")
@@ -143,6 +147,9 @@ class Remote3DisplayConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 vol.Required("tmdb_language", default="en-US"): str,
                 vol.Optional("app_names_json", default="{}"): _multiline(),
                 vol.Optional("app_logos_json", default="{}"): _multiline(),
+                vol.Optional(
+                    "app_artwork_profiles_json", default="{}"
+                ): _multiline(),
             }
         )
         return self.async_show_form(
@@ -163,6 +170,7 @@ class Remote3DisplayOptionsFlow(OptionsFlowWithReload):
                 "xmltv",
                 "matching",
                 "tmdb",
+                "backup",
                 "advanced",
             ],
         )
@@ -181,7 +189,11 @@ class Remote3DisplayOptionsFlow(OptionsFlowWithReload):
         errors: dict[str, str] = {}
         if user_input is not None:
             try:
-                for key in ("app_names_json", "app_logos_json"):
+                for key in (
+                    "app_names_json",
+                    "app_logos_json",
+                    "app_artwork_profiles_json",
+                ):
                     parsed = json.loads(str(user_input.get(key) or "{}"))
                     if not isinstance(parsed, dict):
                         raise ValueError(f"{key} must contain a JSON object")
@@ -217,6 +229,9 @@ class Remote3DisplayOptionsFlow(OptionsFlowWithReload):
                 vol.Optional("tmdb_token"): str,
                 vol.Optional("app_names_json", default="{}"): _multiline(),
                 vol.Optional("app_logos_json", default="{}"): _multiline(),
+                vol.Optional(
+                    "app_artwork_profiles_json", default="{}"
+                ): _multiline(),
             }
         )
         return self.async_show_form(
@@ -236,6 +251,18 @@ class Remote3DisplayOptionsFlow(OptionsFlowWithReload):
                 vol.Required(
                     "tivimate_fallback_artwork", default="tmdb_poster"
                 ): _select(["tmdb_poster", "channel_icon", "app_logo"]),
+                vol.Required(
+                    "smarttube_artwork", default="tmdb_poster"
+                ): _select(["source_artwork", "tmdb_poster", "app_logo"]),
+                vol.Required(
+                    "smarttube_fallback_artwork", default="source_artwork"
+                ): _select(["source_artwork", "tmdb_poster", "app_logo"]),
+                vol.Required("nuvio_artwork", default="tmdb_poster"): _select(
+                    ["source_artwork", "tmdb_poster", "app_logo"]
+                ),
+                vol.Required(
+                    "nuvio_fallback_artwork", default="source_artwork"
+                ): _select(["source_artwork", "tmdb_poster", "app_logo"]),
                 vol.Required("tivimate_channel_icon_scale", default=75): _number(
                     10, 100, 5
                 ),
@@ -362,4 +389,47 @@ class Remote3DisplayOptionsFlow(OptionsFlowWithReload):
         )
         return self.async_show_form(
             step_id="advanced", data_schema=self._values(schema)
+        )
+
+    async def async_step_backup(self, user_input=None) -> ConfigFlowResult:
+        """Export or import non-sensitive settings as JSON."""
+        sensitive = {
+            "tmdb_token",
+            "tivimate_webhook_id",
+            "xtream_base_url",
+            "xtream_username",
+            "xtream_password",
+            "playlist_url",
+            "playlist_urls",
+            "app_logos",
+            "app_logos_json",
+        }
+        errors: dict[str, str] = {}
+        if user_input is not None:
+            try:
+                imported = json.loads(str(user_input.get("settings_json") or "{}"))
+                if not isinstance(imported, dict):
+                    raise ValueError
+                imported = {
+                    key: value
+                    for key, value in imported.items()
+                    if key not in sensitive
+                }
+                return self._save(imported)
+            except (TypeError, ValueError, json.JSONDecodeError):
+                errors["base"] = "invalid_input"
+        current = {**self.config_entry.data, **self.config_entry.options}
+        exported = {
+            key: value for key, value in current.items() if key not in sensitive
+        }
+        schema = vol.Schema(
+            {
+                vol.Required(
+                    "settings_json",
+                    default=json.dumps(exported, indent=2, sort_keys=True),
+                ): _multiline()
+            }
+        )
+        return self.async_show_form(
+            step_id="backup", data_schema=schema, errors=errors
         )

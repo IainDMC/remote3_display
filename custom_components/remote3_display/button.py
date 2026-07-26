@@ -15,6 +15,7 @@ from . import DOMAIN
 BUTTONS = {
     "refresh_epg": ("Refresh EPG", "mdi:update"),
     "clear_artwork_cache": ("Clear artwork cache", "mdi:image-refresh"),
+    "test_artwork": ("Test artwork selection", "mdi:image-search"),
     "reset_tivimate_data": ("Reset retained TiviMate data", "mdi:history"),
     "test_observer": ("Test TiviMate observer", "mdi:access-point-check"),
 }
@@ -58,7 +59,7 @@ class Remote3DisplayButton(ButtonEntity):
             name=entry.title,
             manufacturer="IainDMC",
             model="Remote 3 Media Display",
-            sw_version="2.1.0",
+            sw_version="2.2.0",
         )
 
     async def async_press(self) -> None:

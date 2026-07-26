@@ -14,6 +14,7 @@ PLATFORMS = [
     Platform.SWITCH,
     Platform.NUMBER,
     Platform.SELECT,
+    Platform.SENSOR,
 ]
 
 
@@ -28,7 +29,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         name=device_name,
         manufacturer="IainDMC",
         model="Remote 3 Media Display",
-        sw_version="2.1.0",
+        sw_version="2.2.0",
     )
     hass.data.setdefault(DOMAIN, {}).setdefault("entries", {})[entry.entry_id] = {
         "entry": entry

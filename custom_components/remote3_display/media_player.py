@@ -33,6 +33,7 @@ from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers import entity_registry as er
+from homeassistant.helpers import issue_registry as ir
 from homeassistant.helpers.storage import Store
 from homeassistant.helpers.event import async_track_state_change_event, async_track_time_interval
 from homeassistant.util import dt as dt_util
@@ -190,6 +191,7 @@ async def async_setup_entry(
     for target, source in (
         (CONF_APP_NAMES, "app_names_json"),
         (CONF_APP_LOGOS, "app_logos_json"),
+        ("app_artwork_profiles", "app_artwork_profiles_json"),
     ):
         if source in config and not config.get(target):
             try:
@@ -248,9 +250,13 @@ class Remote3DisplayMediaPlayer(MediaPlayerEntity):
     _attr_has_entity_name = False
     _attr_device_class = MediaPlayerDeviceClass.TV
     _attr_supported_features = (
-        MediaPlayerEntityFeature.PLAY
+        MediaPlayerEntityFeature.TURN_ON
+        | MediaPlayerEntityFeature.TURN_OFF
+        | MediaPlayerEntityFeature.PLAY
         | MediaPlayerEntityFeature.PAUSE
         | MediaPlayerEntityFeature.STOP
+        | MediaPlayerEntityFeature.NEXT_TRACK
+        | MediaPlayerEntityFeature.PREVIOUS_TRACK
         | MediaPlayerEntityFeature.SEEK
         | MediaPlayerEntityFeature.VOLUME_SET
         | MediaPlayerEntityFeature.VOLUME_MUTE
@@ -273,12 +279,13 @@ class Remote3DisplayMediaPlayer(MediaPlayerEntity):
                 name=config[CONF_NAME],
                 manufacturer="IainDMC",
                 model="Remote 3 Media Display",
-                sw_version="2.1.0",
+                sw_version="2.2.0",
             )
         self._source_entity = config[CONF_SOURCE_ENTITY]
         self._app_entity = config.get(CONF_APP_ENTITY)
         self._app_logos = config.get(CONF_APP_LOGOS, {})
         self._app_names = config.get(CONF_APP_NAMES, {})
+        self._app_artwork_profiles = config.get("app_artwork_profiles", {})
         self._fallback_logo = config.get(CONF_FALLBACK_LOGO, DEFAULT_FALLBACK_LOGO)
         self._tmdb_token = config.get(CONF_TMDB_TOKEN)
         self._tmdb_enabled = config.get(CONF_TMDB_ENABLED, False)
@@ -333,6 +340,16 @@ class Remote3DisplayMediaPlayer(MediaPlayerEntity):
         )
         self._tivimate_fallback_artwork = config.get(
             "tivimate_fallback_artwork", "tmdb_poster"
+        )
+        self._smarttube_artwork = config.get(
+            "smarttube_artwork", "tmdb_poster"
+        )
+        self._smarttube_fallback_artwork = config.get(
+            "smarttube_fallback_artwork", "source_artwork"
+        )
+        self._nuvio_artwork = config.get("nuvio_artwork", "tmdb_poster")
+        self._nuvio_fallback_artwork = config.get(
+            "nuvio_fallback_artwork", "source_artwork"
         )
         self._tivimate_channel_icon_scale = int(
             config.get(
@@ -448,6 +465,10 @@ class Remote3DisplayMediaPlayer(MediaPlayerEntity):
 
     async def async_will_remove_from_hass(self) -> None:
         """Remove listeners."""
+        for issue_id in ("observer_stale", "playlist_refresh_failed"):
+            ir.async_delete_issue(
+                self.hass, DOMAIN, f"{self._entry_id}_{issue_id}"
+            )
         if self._unsub_state:
             self._unsub_state()
             self._unsub_state = None
@@ -484,6 +505,70 @@ class Remote3DisplayMediaPlayer(MediaPlayerEntity):
         self._schedule_tmdb_lookup()
         self.async_write_ha_state()
 
+    @property
+    def supported_features(self):
+        """Mirror the useful controls supported by the source player."""
+        source_features = self._source_attr("supported_features")
+        if source_features is None:
+            return self._attr_supported_features
+        allowed = self._attr_supported_features
+        return MediaPlayerEntityFeature(int(source_features)) & allowed
+
+    @callback
+    def apply_live_option(self, key: str, value) -> bool:
+        """Apply presentation and schedule options without a full reload."""
+        direct = {
+            "playlist_enabled": "_playlist_enabled",
+            "show_progress": "_show_progress",
+            "show_channel_as_artist": "_show_channel_as_artist",
+            "show_program_as_title": "_show_program_as_title",
+            "show_next_program": "_show_next_program",
+            "tivimate_retain_last": "_tivimate_retain_last",
+            "xmltv_rollover_enabled": "_xmltv_rollover_enabled",
+            "xmltv_schedule_enabled": "_xmltv_schedule_enabled",
+            "prefer_later_playlist_source": "_prefer_later_playlist_source",
+            "remove_quality_suffixes": "_remove_quality_suffixes",
+            "remove_small_characters": "_remove_small_characters",
+            "tmdb_enabled": "_tmdb_enabled",
+            "tmdb_for_tivimate": "_tmdb_for_tivimate",
+            "tmdb_for_other_apps": "_tmdb_for_other_apps",
+            "tivimate_artwork": "_tivimate_artwork",
+            "tivimate_fallback_artwork": "_tivimate_fallback_artwork",
+            "smarttube_artwork": "_smarttube_artwork",
+            "smarttube_fallback_artwork": "_smarttube_fallback_artwork",
+            "nuvio_artwork": "_nuvio_artwork",
+            "nuvio_fallback_artwork": "_nuvio_fallback_artwork",
+            "icon_canvas_shape": "_icon_canvas_shape",
+            "icon_background": "_icon_background",
+            "inactive_behavior": "_inactive_behavior",
+            "epg_gap_behavior": "_epg_gap_behavior",
+            "channel_matching_mode": "_matching_mode",
+            "tivimate_channel_icon_scale": "_tivimate_channel_icon_scale",
+            "rollover_grace_seconds": "_rollover_grace_seconds",
+            "observer_stale_minutes": "_observer_stale_minutes",
+            "tmdb_minimum_match": "_tmdb_minimum_match",
+        }
+        if key in direct:
+            setattr(self, direct[key], value)
+        elif key in {
+            "xmltv_refresh_hours",
+            "xmltv_history_hours",
+            "xmltv_future_hours",
+        }:
+            attr = {
+                "xmltv_refresh_hours": "_xmltv_refresh",
+                "xmltv_history_hours": "_xmltv_history",
+                "xmltv_future_hours": "_xmltv_future",
+            }[key]
+            setattr(self, attr, timedelta(hours=float(value)))
+        else:
+            return False
+        self._scaled_icon_cache.clear()
+        self._schedule_playlist_refresh()
+        self._schedule_tmdb_lookup()
+        self.async_write_ha_state()
+        return True
+
     @callback
     def _handle_timer(self, now) -> None:
         """Refresh periodically so external clients resync."""
@@ -493,7 +578,39 @@ class Remote3DisplayMediaPlayer(MediaPlayerEntity):
         if self._update_program_from_xmltv(now):
             self.hass.async_create_task(self._async_save_tivimate())
         self._schedule_tmdb_lookup()
+        self._sync_repair_issues()
         self.async_write_ha_state()
+
+    @callback
+    def _sync_repair_issues(self) -> None:
+        """Create actionable Home Assistant Repairs for persistent faults."""
+        observer_stale = (
+            self._tivimate_enabled
+            and self.app_id == self._tivimate_app_id
+            and self._tivimate_last_received is not None
+            and (
+                dt_util.utcnow() - self._tivimate_last_received
+            ).total_seconds()
+            > self._observer_stale_minutes * 60
+        )
+        issues = {
+            "observer_stale": observer_stale,
+            "playlist_refresh_failed": bool(self._playlist_error),
+        }
+        for issue_id, active in issues.items():
+            scoped_id = f"{self._entry_id}_{issue_id}"
+            if active:
+                ir.async_create_issue(
+                    self.hass,
+                    DOMAIN,
+                    scoped_id,
+                    is_fixable=False,
+                    is_persistent=False,
+                    severity=ir.IssueSeverity.WARNING,
+                    translation_key=issue_id,
+                )
+            else:
+                ir.async_delete_issue(self.hass, DOMAIN, scoped_id)
 
     @callback
     def _schedule_tivimate_poll(self) -> None:
@@ -1513,6 +1630,35 @@ class Remote3DisplayMediaPlayer(MediaPlayerEntity):
             or self._source_attr("media_image_url")
         )
 
+    def _app_artwork_preferences(self) -> tuple[str, ...] | None:
+        """Return per-app artwork preferences for supported media apps."""
+        app_marker = f"{self.app_id or ''} {self.app_name or ''}".casefold()
+        for app_match, raw_priority in self._app_artwork_profiles.items():
+            if str(app_match).casefold() not in app_marker:
+                continue
+            priority = (
+                [item.strip() for item in raw_priority.split(",")]
+                if isinstance(raw_priority, str)
+                else list(raw_priority)
+                if isinstance(raw_priority, (list, tuple))
+                else []
+            )
+            valid = tuple(
+                item
+                for item in priority
+                if item in {"source_artwork", "tmdb_poster", "app_logo"}
+            )
+            if valid:
+                return valid
+        if "smarttube" in app_marker:
+            return (
+                self._smarttube_artwork,
+                self._smarttube_fallback_artwork,
+            )
+        if "nuvio" in app_marker:
+            return (self._nuvio_artwork, self._nuvio_fallback_artwork)
+        return None
+
     @property
     def media_image_url(self):
         """Return TMDB poster, real media artwork, or app logo."""
@@ -1547,11 +1693,22 @@ class Remote3DisplayMediaPlayer(MediaPlayerEntity):
                     if choices.get(choice):
                         return choices[choice]
             if self.app_id != self._tivimate_app_id:
-                if tmdb_image:
-                    return tmdb_image
-                image = self._source_artwork()
-                if image:
-                    return image
+                source_image = self._source_artwork()
+                preferences = self._app_artwork_preferences()
+                if preferences is not None:
+                    choices = {
+                        "source_artwork": source_image,
+                        "tmdb_poster": tmdb_image,
+                        "app_logo": app_logo,
+                    }
+                    for choice in (*preferences, "app_logo"):
+                        if choices.get(choice):
+                            return choices[choice]
+                else:
+                    if tmdb_image:
+                        return tmdb_image
+                    if source_image:
+                        return source_image
 
         return (
             self._app_logos.get(self.app_name)
@@ -1610,6 +1767,53 @@ class Remote3DisplayMediaPlayer(MediaPlayerEntity):
             return "source artwork"
         return "app logo"
 
+    def diagnostic_snapshot(self) -> dict:
+        """Return runtime health without credentials or private source URLs."""
+        observer_age = (
+            max(
+                0,
+                (dt_util.utcnow() - self._tivimate_last_received).total_seconds(),
+            )
+            if self._tivimate_last_received
+            else None
+        )
+        return {
+            "ready": True,
+            "observer_health": (
+                "never received"
+                if observer_age is None
+                else "stale"
+                if observer_age > self._observer_stale_minutes * 60
+                else "healthy"
+            ),
+            "observer_age": round(observer_age, 1)
+            if observer_age is not None
+            else None,
+            "tivimate_status": self._tivimate_status,
+            "tivimate_error": self._tivimate_error,
+            "xmltv_last_refresh": self._playlist_last_attempt.isoformat()
+            if self._playlist_last_attempt
+            else None,
+            "xmltv_program_count": self._xmltv_program_count,
+            "xmltv_channel_count": len(self._xmltv_programs),
+            "playlist_source_count": len(self._playlist_urls),
+            "playlist_error": self._playlist_error,
+            "xtream_error": self._xtream_error,
+            "artwork_source": self._artwork_source(),
+            "app_artwork_profile": self._app_artwork_profile_name(),
+            "app_id": self.app_id,
+            "app_name": self.app_name,
+            "tmdb_match_found": bool(self._tmdb_cache.get(self.media_title)),
+        }
+
+    def _app_artwork_profile_name(self) -> str:
+        marker = f"{self.app_id or ''} {self.app_name or ''}".casefold()
+        if "smarttube" in marker:
+            return "SmartTube"
+        if "nuvio" in marker:
+            return "Nuvio"
+        return "default"
+
     @property
     def extra_state_attributes(self):
         next_program = self._next_xmltv_program()
@@ -1639,6 +1843,13 @@ class Remote3DisplayMediaPlayer(MediaPlayerEntity):
                 or self._app_logos.get(self.app_id)
                 or self._fallback_logo
             ),
+            "source_artwork": self._source_artwork(),
+            "artwork_candidates": {
+                "selected": self.media_image_url,
+                "source_artwork": self._source_artwork(),
+                "tmdb_poster": self._tmdb_cache.get(self.media_title),
+                "channel_icon": self._tivimate_channel_icon(),
+            },
             "tivimate_channel": self._tivimate_channel,
             "tivimate_program": self._tivimate_program,
             "tivimate_start": self._tivimate_start.isoformat()
@@ -1677,6 +1888,9 @@ class Remote3DisplayMediaPlayer(MediaPlayerEntity):
             "tivimate_channel_icon_scale": self._tivimate_channel_icon_scale,
             "tivimate_icon_match": self._tivimate_channel_icon_match()[1],
             "artwork_source": self._artwork_source(),
+            "app_artwork_profile": (
+                self._app_artwork_profile_name()
+            ),
             "xtream_icon_count": len(self._xtream_icons),
             "xtream_error": self._xtream_error,
             "playlist_icon_count": len(self._playlist_icons),
@@ -1711,6 +1925,9 @@ class Remote3DisplayMediaPlayer(MediaPlayerEntity):
             self._tmdb_cache.clear()
             self._scaled_icon_cache.clear()
             self._schedule_tmdb_lookup()
+        elif action == "test_artwork":
+            self._tmdb_cache.pop(self.media_title, None)
+            self._schedule_tmdb_lookup()
         elif action == "reset_tivimate_data":
             self._tivimate_channel = ""
             self._tivimate_program = ""
@@ -1744,6 +1961,38 @@ class Remote3DisplayMediaPlayer(MediaPlayerEntity):
             blocking=False,
         )
 
+    async def async_turn_on(self) -> None:
+        await self.hass.services.async_call(
+            "media_player",
+            "turn_on",
+            {"entity_id": self._source_entity},
+            blocking=False,
+        )
+
+    async def async_turn_off(self) -> None:
+        await self.hass.services.async_call(
+            "media_player",
+            "turn_off",
+            {"entity_id": self._source_entity},
+            blocking=False,
+        )
+
+    async def async_media_next_track(self) -> None:
+        await self.hass.services.async_call(
+            "media_player",
+            "media_next_track",
+            {"entity_id": self._source_entity},
+            blocking=False,
+        )
+
+    async def async_media_previous_track(self) -> None:
+        await self.hass.services.async_call(
+            "media_player",
+            "media_previous_track",
+            {"entity_id": self._source_entity},
+            blocking=False,
+        )
+
     async def async_media_stop(self) -> None:
         await self.hass.services.async_call(
             "media_player",
@@ -1773,5 +2022,21 @@ class Remote3DisplayMediaPlayer(MediaPlayerEntity):
             "media_player",
             "volume_mute",
             {"entity_id": self._source_entity, "is_volume_muted": mute},
+            blocking=False,
+        )
+
+    async def async_volume_up(self) -> None:
+        await self.hass.services.async_call(
+            "media_player",
+            "volume_up",
+            {"entity_id": self._source_entity},
+            blocking=False,
+        )
+
+    async def async_volume_down(self) -> None:
+        await self.hass.services.async_call(
+            "media_player",
+            "volume_down",
+            {"entity_id": self._source_entity},
             blocking=False,
         )

@@ -23,6 +23,30 @@ SELECTS = {
         ["tmdb_poster", "channel_icon", "app_logo"],
         "mdi:image-off-outline",
     ),
+    "smarttube_artwork": (
+        "SmartTube preferred artwork",
+        "tmdb_poster",
+        ["source_artwork", "tmdb_poster", "app_logo"],
+        "mdi:youtube",
+    ),
+    "smarttube_fallback_artwork": (
+        "SmartTube fallback artwork",
+        "source_artwork",
+        ["source_artwork", "tmdb_poster", "app_logo"],
+        "mdi:youtube",
+    ),
+    "nuvio_artwork": (
+        "Nuvio preferred artwork",
+        "tmdb_poster",
+        ["source_artwork", "tmdb_poster", "app_logo"],
+        "mdi:movie-open",
+    ),
+    "nuvio_fallback_artwork": (
+        "Nuvio fallback artwork",
+        "source_artwork",
+        ["source_artwork", "tmdb_poster", "app_logo"],
+        "mdi:movie-open-outline",
+    ),
     "icon_canvas_shape": (
         "Channel icon canvas",
         "preserve",
