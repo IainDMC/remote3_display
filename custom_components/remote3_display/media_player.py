@@ -279,7 +279,7 @@ class Remote3DisplayMediaPlayer(MediaPlayerEntity):
                 name=config[CONF_NAME],
                 manufacturer="IainDMC",
                 model="Remote 3 Media Display",
-                sw_version="2.2.0",
+                sw_version="2.2.1",
             )
         self._source_entity = config[CONF_SOURCE_ENTITY]
         self._app_entity = config.get(CONF_APP_ENTITY)
@@ -584,17 +584,12 @@ class Remote3DisplayMediaPlayer(MediaPlayerEntity):
     @callback
     def _sync_repair_issues(self) -> None:
         """Create actionable Home Assistant Repairs for persistent faults."""
-        observer_stale = (
-            self._tivimate_enabled
-            and self.app_id == self._tivimate_app_id
-            and self._tivimate_last_received is not None
-            and (
-                dt_util.utcnow() - self._tivimate_last_received
-            ).total_seconds()
-            > self._observer_stale_minutes * 60
+        # Observer updates are event-driven and may legitimately be old when the
+        # channel has not changed, so age remains diagnostic information only.
+        ir.async_delete_issue(
+            self.hass, DOMAIN, f"{self._entry_id}_observer_stale"
         )
         issues = {
-            "observer_stale": observer_stale,
             "playlist_refresh_failed": bool(self._playlist_error),
         }
         for issue_id, active in issues.items():

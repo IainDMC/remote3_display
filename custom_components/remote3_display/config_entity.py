@@ -41,7 +41,7 @@ class Remote3ConfigEntity(Entity):
             ),
             manufacturer="IainDMC",
             model="Remote 3 Media Display",
-            sw_version="2.2.0",
+            sw_version="2.2.1",
         )
 
     @property

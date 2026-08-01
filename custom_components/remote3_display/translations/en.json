@@ -1,7 +1,6 @@
 {
   "title": "Remote 3 Media Display",
   "issues": {
-    "observer_stale": {"title": "TiviMate observer is stale", "description": "No recent TiviMate observer update has reached Home Assistant. Check the Shield accessibility service and the observer Home Assistant URL."},
     "playlist_refresh_failed": {"title": "Programme guide refresh failed", "description": "Remote 3 Media Display could not refresh one or more playlist or XMLTV sources. Check the configured URLs and credentials."}
   },
   "config": {
