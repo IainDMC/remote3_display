@@ -207,6 +207,7 @@ async def async_setup_entry(
     ] = entity
     if not domain_data.get(DATA_ICON_VIEW_REGISTERED):
         hass.http.register_view(Remote3DisplayChannelIconView())
+        hass.http.register_view(Remote3DisplayPosterView())
         domain_data[DATA_ICON_VIEW_REGISTERED] = True
     async_add_entities([entity])
 
@@ -244,6 +245,24 @@ class Remote3DisplayChannelIconView(HomeAssistantView):
         )
 
 
+class Remote3DisplayPosterView(Remote3DisplayChannelIconView):
+    """Serve a square poster composite using the existing artwork token."""
+
+    url = "/api/remote3_display/poster/{entity_key}"
+    name = "api:remote3_display:poster"
+
+    async def get(self, request: Request, entity_key: str) -> Response:
+        entity = request.app[KEY_HASS].data.get(DOMAIN, {}).get(DATA_ICON_ENTITIES, {}).get(entity_key)
+        if entity is None:
+            return Response(status=404)
+        if not secrets.compare_digest(str(request.query.get("token") or ""), entity.icon_access_token):
+            return Response(status=403)
+        image = await entity.async_get_poster_composite()
+        if image is None:
+            return Response(status=404)
+        return Response(body=image[0], content_type=image[1], headers={"Cache-Control": "private, max-age=300"})
+
+
 class Remote3DisplayMediaPlayer(MediaPlayerEntity):
     """A read-only media player facade with app-logo artwork fallback."""
 
@@ -279,7 +298,7 @@ class Remote3DisplayMediaPlayer(MediaPlayerEntity):
                 name=config[CONF_NAME],
                 manufacturer="IainDMC",
                 model="Remote 3 Media Display",
-                sw_version="2.2.1",
+                sw_version="2.3.0",
             )
         self._source_entity = config[CONF_SOURCE_ENTITY]
         self._app_entity = config.get(CONF_APP_ENTITY)
@@ -359,6 +378,8 @@ class Remote3DisplayMediaPlayer(MediaPlayerEntity):
         )
         self._icon_canvas_shape = config.get("icon_canvas_shape", "preserve")
         self._icon_background = config.get("icon_background", "transparent")
+        self._poster_blurred_background = config.get("poster_blurred_background", False)
+        self._poster_channel_logo = config.get("poster_channel_logo", False)
         self._show_progress = config.get("show_progress", True)
         self._show_channel_as_artist = config.get("show_channel_as_artist", True)
         self._show_program_as_title = config.get("show_program_as_title", True)
@@ -540,6 +561,8 @@ class Remote3DisplayMediaPlayer(MediaPlayerEntity):
             "nuvio_fallback_artwork": "_nuvio_fallback_artwork",
             "icon_canvas_shape": "_icon_canvas_shape",
             "icon_background": "_icon_background",
+            "poster_blurred_background": "_poster_blurred_background",
+            "poster_channel_logo": "_poster_channel_logo",
             "inactive_behavior": "_inactive_behavior",
             "epg_gap_behavior": "_epg_gap_behavior",
             "channel_matching_mode": "_matching_mode",
@@ -1656,6 +1679,94 @@ class Remote3DisplayMediaPlayer(MediaPlayerEntity):
 
     @property
     def media_image_url(self):
+        original = self._original_media_image_url()
+        poster = self._tmdb_cache.get(self.media_title)
+        overlay = self._poster_channel_logo and self.app_id == self._tivimate_app_id and self._tivimate_channel_icon()
+        if (self._poster_blurred_background or overlay) and original and original == poster:
+            version = hashlib.sha256(f"{original}|{self._poster_blurred_background}|{overlay}".encode()).hexdigest()[:12]
+            return (
+                f"/api/remote3_display/poster/{self.icon_entity_key}"
+                f"?token={self.icon_access_token}&v={version}"
+            )
+        return original
+
+    async def async_get_poster_composite(self):
+        """Fetch only selected TMDB posters; never transform channel/app logos."""
+        url = self._original_media_image_url()
+        if not url or url != self._tmdb_cache.get(self.media_title):
+            return None
+        logo_url = self._tivimate_channel_icon() if self._poster_channel_logo and self.app_id == self._tivimate_app_id else None
+        key = ("poster", url, self._poster_blurred_background, logo_url)
+        if key in self._scaled_icon_cache:
+            return self._scaled_icon_cache[key]
+        try:
+            async with async_get_clientsession(self.hass).get(url, timeout=15) as response:
+                response.raise_for_status()
+                original = await response.read()
+                content_type = response.headers.get("Content-Type", "image/jpeg").split(";", 1)[0]
+            logo_bytes = None
+            if logo_url:
+                try:
+                    async with async_get_clientsession(self.hass).get(logo_url, timeout=15) as response:
+                        response.raise_for_status()
+                        logo_bytes = await response.read()
+                except Exception as err:
+                    _LOGGER.debug("Poster logo unavailable: %s", err)
+            try:
+                body = await self.hass.async_add_executor_job(self._compose_poster_bytes, original, self._poster_blurred_background, logo_bytes)
+                result = (body, "image/png")
+            except Exception:
+                result = (original, content_type)
+            if len(self._scaled_icon_cache) >= 32:
+                self._scaled_icon_cache.pop(next(iter(self._scaled_icon_cache)))
+            self._scaled_icon_cache[key] = result
+            return result
+        except Exception as err:
+            _LOGGER.debug("Poster composite unavailable: %s", err)
+            return None
+
+    @staticmethod
+    def _compose_poster_bytes(original: bytes, blurred: bool = True, logo_bytes: bytes | None = None) -> bytes:
+        """Sharp fitted poster over a blurred, edge-darkened square backdrop."""
+        from PIL import Image, ImageFilter, ImageOps
+
+        with Image.open(BytesIO(original)) as source:
+            poster = ImageOps.exif_transpose(source).convert("RGB")
+        size = 640
+        canvas = ImageOps.fit(poster, (size, size), method=Image.Resampling.LANCZOS)
+        canvas = canvas.filter(ImageFilter.GaussianBlur(24)).convert("RGBA") if blurred else Image.new("RGBA", (size, size), (0, 0, 0, 255))
+        foreground = ImageOps.contain(poster, (size, size), method=Image.Resampling.LANCZOS)
+        left = (size - foreground.width) // 2
+        top = (size - foreground.height) // 2
+        mask = Image.new("L", (size, size))
+        pixels = mask.load()
+        for y in range(size):
+            for x in range(size):
+                distance = max((left - x) / max(left, 1), (x - left - foreground.width + 1) / max(left, 1), (top - y) / max(top, 1), (y - top - foreground.height + 1) / max(top, 1), 0)
+                pixels[x, y] = round(255 * (0.15 + 0.30 * min(distance, 1)))
+        canvas.alpha_composite(Image.composite(Image.new("RGBA", canvas.size, (0, 0, 0, 255)), Image.new("RGBA", canvas.size), mask))
+        canvas.paste(foreground, (left, top))
+        if logo_bytes:
+            try:
+                with Image.open(BytesIO(logo_bytes)) as source:
+                    logo = source.convert("RGBA")
+                bounds = logo.getbbox()
+                if bounds:
+                    logo = logo.crop(bounds)
+                    logo = ImageOps.contain(logo, (480, 190), method=Image.Resampling.LANCZOS)
+                    position = ((size - logo.width) // 2, size - logo.height - 26)
+                    shadow = Image.new("RGBA", canvas.size)
+                    shadow.paste((0, 0, 0, 190), (position[0], position[1], position[0] + logo.width, position[1] + logo.height), logo.getchannel("A"))
+                    canvas.alpha_composite(shadow.filter(ImageFilter.GaussianBlur(5)))
+                    canvas.alpha_composite(logo, position)
+            except Exception:
+                # Unsupported logos must not prevent the programme poster displaying.
+                pass
+        output = BytesIO()
+        canvas.convert("RGB").save(output, format="PNG")
+        return output.getvalue()
+
+    def _original_media_image_url(self):
         """Return TMDB poster, real media artwork, or app logo."""
         if self._media_active():
             channel_icon = self._tivimate_channel_icon()

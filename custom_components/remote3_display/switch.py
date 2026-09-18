@@ -11,6 +11,8 @@ from .config_entity import Remote3ConfigEntity
 
 
 SWITCHES = {
+    "poster_blurred_background": ("Blurred poster background", False, "mdi:image-filter-center-focus"),
+    "poster_channel_logo": ("Channel logo over programme poster", False, "mdi:television-classic"),
     "tivimate_enabled": ("TiviMate detection", True, "mdi:television-play"),
     "playlist_enabled": ("Playlist and XMLTV sources", True, "mdi:playlist-play"),
     "show_progress": ("Show programme progress", True, "mdi:progress-clock"),

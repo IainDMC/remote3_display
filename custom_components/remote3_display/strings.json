@@ -97,6 +97,8 @@
           "tivimate_channel_icon_scale": "Channel icon size (%)",
           "icon_canvas_shape": "Icon canvas shape",
           "icon_background": "Icon background",
+          "poster_blurred_background": "Blurred poster background",
+          "poster_channel_logo": "Channel logo over programme poster",
           "show_progress": "Show programme progress",
           "show_channel_as_artist": "Show channel as artist",
           "show_program_as_title": "Show programme as title",

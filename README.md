@@ -1,5 +1,20 @@
 # Remote 3 Media Display
 
+### Optional square poster artwork (2.3.0)
+
+In **Display and artwork**, or the device's configuration controls, enable
+**Blurred poster background** to fit a sharp TMDB poster inside a square with
+a blurred, edge-darkened background. Portrait and landscape images are supported.
+Enable **Channel logo over programme poster** for a large TiviMate channel logo
+across the bottom of a selected programme poster. These independent switches
+default to off; neither changes the artwork priority. Choose TMDB poster in the
+TiviMate artwork priority to use the overlay. Other apps can use the blurred
+background for TMDB posters, but do not receive a channel logo.
+
+Image processing runs in a background worker and results are cached. A missing
+or unsupported channel logo leaves the poster intact. Update the integration
+files and restart Home Assistant to register the new image route and controls.
+
 A Home Assistant custom media-player facade designed for Unfolded Circle Remote 3.
 
 It combines media metadata from an existing Home Assistant player with Android TV
