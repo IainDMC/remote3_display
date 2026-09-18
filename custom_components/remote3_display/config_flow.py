@@ -275,6 +275,7 @@ class Remote3DisplayOptionsFlow(OptionsFlowWithReload):
                 vol.Required("show_progress", default=True): bool,
                 vol.Required("poster_blurred_background", default=False): bool,
                 vol.Required("poster_channel_logo", default=False): bool,
+                vol.Required("poster_canvas_width", default=100): _number(100, 200, 5),
                 vol.Required("show_channel_as_artist", default=True): bool,
                 vol.Required("show_program_as_title", default=True): bool,
                 vol.Required("show_next_program", default=True): bool,

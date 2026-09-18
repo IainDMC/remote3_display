@@ -12,6 +12,7 @@ from .config_entity import Remote3ConfigEntity
 
 
 NUMBERS = {
+    "poster_canvas_width": ("Poster canvas width", 100, 100, 200, 5, PERCENTAGE, "mdi:arrow-expand-horizontal"),
     "tivimate_channel_icon_scale": (
         "Channel icon size",
         75,

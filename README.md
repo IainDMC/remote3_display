@@ -2,6 +2,12 @@
 
 ### Optional square poster artwork (2.3.0)
 
+Version 2.3.1 adds **Poster canvas width** (100–200%). 100% preserves the
+square layout; larger values extend the background sideways while preserving
+the sharp poster's size within the image. With Remote 3's **Zoom artwork**
+enabled, try 125–150% and tune to its artwork slot. Actual cropping depends
+on the remote's layout; this setting does not directly change widget margins.
+
 In **Display and artwork**, or the device's configuration controls, enable
 **Blurred poster background** to fit a sharp TMDB poster inside a square with
 a blurred, edge-darkened background. Portrait and landscape images are supported.
