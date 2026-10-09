@@ -298,7 +298,7 @@ class Remote3DisplayMediaPlayer(MediaPlayerEntity):
                 name=config[CONF_NAME],
                 manufacturer="IainDMC",
                 model="Remote 3 Media Display",
-                sw_version="2.3.1",
+                sw_version="2.3.2",
             )
         self._source_entity = config[CONF_SOURCE_ENTITY]
         self._app_entity = config.get(CONF_APP_ENTITY)
@@ -318,6 +318,7 @@ class Remote3DisplayMediaPlayer(MediaPlayerEntity):
             if line.strip()
         }
         self._tmdb_cache: dict[str, str | None] = {}
+        self._tmdb_media_types: dict[str, str | None] = {}
         self._tmdb_pending: set[str] = set()
         self._tivimate_enabled = config.get(CONF_TIVIMATE_ENABLED, True)
         self._tivimate_app_id = config.get(
@@ -1476,6 +1477,7 @@ class Remote3DisplayMediaPlayer(MediaPlayerEntity):
             self._tmdb_pending.discard(title)
 
         poster_path = None
+        matched_media_type = None
         for result in data.get("results", []):
             if result.get("media_type") not in ("movie", "tv"):
                 continue
@@ -1485,10 +1487,11 @@ class Remote3DisplayMediaPlayer(MediaPlayerEntity):
             ).ratio() * 100
             if score < self._tmdb_minimum_match:
                 continue
+            matched_media_type = result.get("media_type")
             poster_path = result.get("poster_path")
-            if poster_path:
-                break
+            break
 
+        self._tmdb_media_types[title] = matched_media_type
         self._tmdb_cache[title] = (
             f"https://image.tmdb.org/t/p/w500{poster_path}" if poster_path else None
         )
@@ -1913,6 +1916,7 @@ class Remote3DisplayMediaPlayer(MediaPlayerEntity):
             "app_id": self.app_id,
             "app_name": self.app_name,
             "tmdb_match_found": bool(self._tmdb_cache.get(self.media_title)),
+            "nuvio_content_type": self._nuvio_content_type()[0],
         }
 
     def _app_artwork_profile_name(self) -> str:
@@ -1922,6 +1926,78 @@ class Remote3DisplayMediaPlayer(MediaPlayerEntity):
         if "nuvio" in marker:
             return "Nuvio"
         return "default"
+
+    @staticmethod
+    def _normalize_nuvio_content_type(value) -> str | None:
+        """Normalize common player and TMDB media types."""
+        marker = (
+            str(value or "")
+            .strip()
+            .casefold()
+            .replace("_", " ")
+            .replace("-", " ")
+        )
+        if marker in {"trailer", "preview", "movie trailer", "tv trailer"}:
+            return "Trailer"
+        if marker in {"movie", "film"}:
+            return "Movie"
+        if marker in {
+            "tv",
+            "show",
+            "tv show",
+            "tvshow",
+            "series",
+            "tv series",
+            "episode",
+            "season",
+        }:
+            return "Episode"
+        return None
+
+    def _nuvio_content_type(self) -> tuple[str, str]:
+        """Return Nuvio's current movie/show classification and its source."""
+        marker = f"{self.app_id or ''} {self.app_name or ''}".casefold()
+        if "nuvio" not in marker or not self._media_active():
+            return ("Inactive", "none")
+        for attribute in ("is_trailer", "media_is_trailer", "trailer"):
+            value = self._source_attr(attribute)
+            if value is True or str(value or "").strip().casefold() in {
+                "true",
+                "yes",
+                "1",
+            }:
+                return ("Trailer", f"source:{attribute}")
+        for attribute in (
+            "media_content_type",
+            "media_type",
+            "content_type",
+            "media_class",
+        ):
+            normalized = self._normalize_nuvio_content_type(
+                self._source_attr(attribute)
+            )
+            if normalized:
+                return (normalized, f"source:{attribute}")
+        if any(
+            self._source_attr(attribute)
+            for attribute in (
+                "media_series_title",
+                "media_season",
+                "media_episode",
+            )
+        ):
+            return ("Episode", "source:episode_metadata")
+        artist = str(self._source_attr("media_artist") or "").strip()
+        if re.search(r"\bS\d+\s*:\s*E\d+\b", artist, re.IGNORECASE):
+            return ("Episode", "source:nuvio_subtitle")
+        if re.fullmatch(r"(?:19|20)\d{2}", artist):
+            return ("Movie", "source:nuvio_year")
+        normalized = self._normalize_nuvio_content_type(
+            self._tmdb_media_types.get(self.media_title)
+        )
+        if normalized:
+            return (normalized, "tmdb")
+        return ("Unknown", "none")
 
     @property
     def extra_state_attributes(self):
@@ -1941,6 +2017,7 @@ class Remote3DisplayMediaPlayer(MediaPlayerEntity):
             if observer_age > self._observer_stale_minutes * 60
             else "healthy"
         )
+        nuvio_content_type, nuvio_content_type_source = self._nuvio_content_type()
         return {
             "source_entity": self._source_entity,
             "app_entity": self._app_entity,
@@ -2000,6 +2077,8 @@ class Remote3DisplayMediaPlayer(MediaPlayerEntity):
             "app_artwork_profile": (
                 self._app_artwork_profile_name()
             ),
+            "nuvio_content_type": nuvio_content_type,
+            "nuvio_content_type_source": nuvio_content_type_source,
             "xtream_icon_count": len(self._xtream_icons),
             "xtream_error": self._xtream_error,
             "playlist_icon_count": len(self._playlist_icons),
@@ -2032,10 +2111,12 @@ class Remote3DisplayMediaPlayer(MediaPlayerEntity):
             await self._async_fetch_playlist_icons()
         elif action == "clear_artwork_cache":
             self._tmdb_cache.clear()
+            self._tmdb_media_types.clear()
             self._scaled_icon_cache.clear()
             self._schedule_tmdb_lookup()
         elif action == "test_artwork":
             self._tmdb_cache.pop(self.media_title, None)
+            self._tmdb_media_types.pop(self.media_title, None)
             self._schedule_tmdb_lookup()
         elif action == "reset_tivimate_data":
             self._tivimate_channel = ""

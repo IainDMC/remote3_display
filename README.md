@@ -1,5 +1,17 @@
 # Remote 3 Media Display
 
+### Nuvio movie/show classification (2.3.2)
+
+While Nuvio is active, the media-player entity exposes `nuvio_content_type`
+as `Episode`, `Movie`, `Trailer`, or `Unknown`, plus
+`nuvio_content_type_source`. A dedicated
+**Nuvio content type** diagnostic sensor exposes the same classification for
+dashboards and automations. Native Nuvio/Home Assistant media metadata takes
+priority; the accepted TMDB movie/TV match is used as a fallback. Trailer is
+used only when explicit trailer metadata is present; the current Nuvio media
+session otherwise classifies playback as movie or TV show. When Nuvio is not
+active the value is `Inactive`.
+
 ### Optional square poster artwork (2.3.0)
 
 Version 2.3.1 adds **Poster canvas width** (100–200%). 100% preserves the

@@ -19,6 +19,7 @@ SENSORS = {
     "playlist_error": ("Playlist error", "", "mdi:alert-circle-outline"),
     "artwork_source": ("Artwork source", "none", "mdi:image-search"),
     "app_artwork_profile": ("Artwork profile", "default", "mdi:tune-variant"),
+    "nuvio_content_type": ("Nuvio content type", "Inactive", "mdi:movie-open"),
 }
 
 
